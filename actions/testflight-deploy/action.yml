@@ -55,6 +55,14 @@ inputs:
     description: Whether to send TestFlight notifications.
     required: false
     default: 'true'
+  upload-failure-artifacts:
+    description: Whether to upload archive/export artifacts when the deploy fails.
+    required: false
+    default: 'true'
+  failure-artifact-name:
+    description: Artifact name used when uploading failure logs.
+    required: false
+    default: testflight-deploy-logs
 outputs:
   build-number:
     description: Generated or provided build number.
@@ -319,3 +327,13 @@ runs:
         ruby "$ACTION_ROOT/../../scripts/ensure_testflight_internal_distribution.rb" \
           --bundle-id "$APP_BUNDLE_ID" \
           --build-number "$BUILD_NUMBER"
+
+    - name: Upload export artifacts on failure
+      if: ${{ failure() && inputs.upload-failure-artifacts == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.failure-artifact-name }}
+        path: |
+          ${{ env.EXPORT_PATH }}
+          ${{ env.ARCHIVE_PATH }}
+        if-no-files-found: ignore
