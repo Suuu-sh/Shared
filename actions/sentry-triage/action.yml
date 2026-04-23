@@ -1,0 +1,98 @@
+name: Sentry Triage
+description: Fetch unresolved Sentry issues and open or update fix PRs.
+inputs:
+  github-token:
+    description: GitHub token used by gh and git pushes.
+    required: true
+  sentry-auth-token:
+    description: Sentry auth token.
+    required: true
+  base-url:
+    description: Sentry base URL.
+    required: false
+    default: https://sentry.io
+  org:
+    description: Sentry org slug.
+    required: false
+    default: suu-hb
+  project:
+    description: Sentry project slug.
+    required: true
+  base-branch:
+    description: Base branch for generated fix branches.
+    required: false
+    default: main
+  time-range:
+    description: Sentry time range.
+    required: false
+    default: 24h
+  environment:
+    description: Sentry environment filter.
+    required: false
+    default: production
+  query:
+    description: Sentry issue search query.
+    required: false
+    default: is:unresolved
+  limit:
+    description: Maximum number of issues to process.
+    required: false
+    default: '3'
+  branch-prefix:
+    description: Prefix for generated fix branches.
+    required: false
+    default: sentry/fix
+  note-dir:
+    description: Directory where generated notes are written.
+    required: false
+    default: .codex/sentry-fix
+  skip-pr:
+    description: Skip PR creation/update.
+    required: false
+    default: 'false'
+  dry-run:
+    description: Dry-run mode.
+    required: false
+    default: 'false'
+  python-version:
+    description: Python version.
+    required: false
+    default: '3.11'
+runs:
+  using: composite
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Run Sentry triage automation
+      shell: bash
+      env:
+        ACTION_ROOT: ${{ github.action_path }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        GH_TOKEN: ${{ inputs.github-token }}
+        SENTRY_AUTH_TOKEN: ${{ inputs.sentry-auth-token }}
+        SENTRY_BASE_URL: ${{ inputs.base-url }}
+        SENTRY_ORG: ${{ inputs.org }}
+        SENTRY_PROJECT: ${{ inputs.project }}
+        SENTRY_BASE_BRANCH: ${{ inputs.base-branch }}
+        SENTRY_TIME_RANGE: ${{ inputs.time-range }}
+        SENTRY_ENVIRONMENT: ${{ inputs.environment }}
+        SENTRY_QUERY: ${{ inputs.query }}
+        SENTRY_LIMIT: ${{ inputs.limit }}
+        SENTRY_BRANCH_PREFIX: ${{ inputs.branch-prefix }}
+        SENTRY_NOTE_DIR: ${{ inputs.note-dir }}
+        SENTRY_REPO_ROOT: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+
+        EXTRA_ARGS=()
+        if [ '${{ inputs.skip-pr }}' = 'true' ]; then
+          EXTRA_ARGS+=(--skip-pr)
+        fi
+        if [ '${{ inputs.dry-run }}' = 'true' ]; then
+          EXTRA_ARGS+=(--dry-run)
+        fi
+
+        python "$ACTION_ROOT/../../scripts/sentry_triage.py" "${EXTRA_ARGS[@]}"

@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Run Go tests
+        uses: <OWNER>/<SHARED_REPO>/actions/go-test@main
+        with:
+          working-directory: .
+          go-version: '1.23'
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Run Go lint
+        uses: <OWNER>/<SHARED_REPO>/actions/go-lint@main
+        with:
+          working-directory: .
+          go-version: '1.23'
+          golangci-lint-args: --timeout=5m
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Build binary
+        uses: <OWNER>/<SHARED_REPO>/actions/go-build@main
+        with:
+          working-directory: .
+          go-version: '1.23'
+          build-command: go build -o main ./cmd/main.go

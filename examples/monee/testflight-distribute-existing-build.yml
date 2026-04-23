@@ -1,0 +1,32 @@
+name: TestFlight Distribute Existing Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: Optional build number to target. Leave blank to use the latest uploaded build.
+        required: false
+        type: string
+
+jobs:
+  distribute:
+    name: Assign existing TestFlight build to tester
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Assign build and notify tester
+        uses: <OWNER>/<SHARED_REPO>/actions/testflight-distribute-existing-build@main
+        with:
+          app-bundle-id: com.yota.Monee
+          app-store-connect-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          app-store-connect-issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          app-store-connect-private-key: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          build-number: ${{ github.event.inputs.build_number }}
+          testflight-internal-group-name: ${{ vars.TESTFLIGHT_INTERNAL_GROUP_NAME }}
+          testflight-internal-tester-emails: ${{ secrets.TESTFLIGHT_INTERNAL_TESTER_EMAILS }}
+          testflight-notify-assigned-testers: 'true'
