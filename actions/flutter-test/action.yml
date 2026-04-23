@@ -1,0 +1,86 @@
+name: Flutter Test
+description: Set up Flutter, prepare env files, install dependencies, and run flutter test.
+inputs:
+  working-directory:
+    description: Directory that contains pubspec.yaml.
+    required: false
+    default: .
+  flutter-channel:
+    description: Flutter channel.
+    required: false
+    default: stable
+  env-local-path:
+    description: Path to the generated local env file relative to working-directory.
+    required: false
+    default: .env.local
+  env-production-path:
+    description: Path to the generated production env file relative to working-directory.
+    required: false
+    default: .env.production
+  env-file-content:
+    description: Optional content written to env-local-path. If omitted, a safe placeholder file is generated.
+    required: false
+    default: ''
+  copy-local-to-production:
+    description: Whether to copy env-local-path to env-production-path.
+    required: false
+    default: 'true'
+  install-command:
+    description: Command used to install dependencies.
+    required: false
+    default: flutter pub get
+  test-command:
+    description: Command used to run tests.
+    required: false
+    default: flutter test
+runs:
+  using: composite
+  steps:
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: ${{ inputs.flutter-channel }}
+        cache: true
+
+    - name: Prepare env assets for CI
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        ENV_FILE_CONTENT: ${{ inputs.env-file-content }}
+        ENV_LOCAL_PATH: ${{ inputs.env-local-path }}
+        ENV_PRODUCTION_PATH: ${{ inputs.env-production-path }}
+        COPY_LOCAL_TO_PRODUCTION: ${{ inputs.copy-local-to-production }}
+      run: |
+        set -euo pipefail
+
+        if [ -n "$ENV_FILE_CONTENT" ]; then
+          printf '%s\n' "$ENV_FILE_CONTENT" > "$ENV_LOCAL_PATH"
+        else
+          cat > "$ENV_LOCAL_PATH" <<'EOF'
+          API_BASE_URL=https://example.com/api
+          SUPABASE_URL=https://example.supabase.co
+          SUPABASE_PUBLISHABLE_KEY=test-publishable-key
+          GOOGLE_WEB_CLIENT_ID=test-web-client-id.apps.googleusercontent.com
+          GOOGLE_IOS_CLIENT_ID=test-ios-client-id.apps.googleusercontent.com
+          SENTRY_DSN=
+          SENTRY_TRACES_SAMPLE_RATE=0.1
+          EOF
+        fi
+
+        if [ "$COPY_LOCAL_TO_PRODUCTION" = 'true' ]; then
+          cp "$ENV_LOCAL_PATH" "$ENV_PRODUCTION_PATH"
+        fi
+
+    - name: Install dependencies
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        ${{ inputs.install-command }}
+
+    - name: Run tests
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        ${{ inputs.test-command }}

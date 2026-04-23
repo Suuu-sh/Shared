@@ -1,0 +1,30 @@
+name: Go Build
+description: Set up Go and build the target binary.
+inputs:
+  working-directory:
+    description: Directory that contains go.mod.
+    required: false
+    default: .
+  go-version:
+    description: Go version to install.
+    required: false
+    default: '1.23'
+  build-command:
+    description: Command used to build the application.
+    required: false
+    default: go build -o main ./cmd/main.go
+runs:
+  using: composite
+  steps:
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.go-version }}
+        cache: true
+
+    - name: Build
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        ${{ inputs.build-command }}

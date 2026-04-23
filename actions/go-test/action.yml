@@ -1,0 +1,61 @@
+name: Go Test
+description: Set up Go, download dependencies, run tests, and optionally upload coverage.
+inputs:
+  working-directory:
+    description: Directory that contains go.mod.
+    required: false
+    default: .
+  go-version:
+    description: Go version to install.
+    required: false
+    default: '1.23'
+  download-command:
+    description: Command used to download dependencies.
+    required: false
+    default: go mod download
+  test-command:
+    description: Command used to run tests.
+    required: false
+    default: go test ./... -v -race -coverprofile=coverage.out
+  coverage-file:
+    description: Coverage file path relative to working-directory.
+    required: false
+    default: coverage.out
+  upload-coverage:
+    description: Whether to upload coverage to Codecov.
+    required: false
+    default: 'true'
+  codecov-token:
+    description: Optional Codecov token.
+    required: false
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.go-version }}
+        cache: true
+
+    - name: Download dependencies
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        ${{ inputs.download-command }}
+
+    - name: Run tests
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        ${{ inputs.test-command }}
+
+    - name: Upload coverage
+      if: ${{ inputs.upload-coverage == 'true' }}
+      uses: codecov/codecov-action@v4
+      with:
+        files: ${{ inputs.working-directory }}/${{ inputs.coverage-file }}
+        fail_ci_if_error: false
+        token: ${{ inputs.codecov-token }}
