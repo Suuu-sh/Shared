@@ -42,11 +42,22 @@ def run_command(
 
 def default_commit_range() -> str:
     event_name = os.environ.get("GITHUB_EVENT_NAME")
-    before = os.environ.get("GITHUB_EVENT_BEFORE", "")
-    sha = os.environ.get("GITHUB_SHA", "")
 
-    if event_name == "push" and before and sha and any(ch != "0" for ch in before):
-        return f"{before}..{sha}"
+    if event_name == "push":
+        before = os.environ.get("GITHUB_EVENT_BEFORE", "")
+        after = os.environ.get("GITHUB_SHA", "")
+
+        event_path = os.environ.get("GITHUB_EVENT_PATH", "")
+        if event_path:
+            try:
+                payload = json.loads(Path(event_path).read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                payload = {}
+            before = str(payload.get("before") or before)
+            after = str(payload.get("after") or after)
+
+        if before and after and any(ch != "0" for ch in before):
+            return f"{before}..{after}"
 
     return "HEAD~1..HEAD"
 
