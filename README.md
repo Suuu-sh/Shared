@@ -40,7 +40,6 @@ Monee と Talllk で使っている GitHub Actions / helper scripts を 1 か所
 
 ```text
 actions/   composite actions 本体
-examples/  各プロダクト repo から呼び出す薄い workflow 例
 scripts/   action から呼び出す共通スクリプト
 ```
 
@@ -51,7 +50,7 @@ scripts/   action から呼び出す共通スクリプト
 ```yaml
 steps:
   - uses: actions/checkout@v5
-  - uses: <OWNER>/<SHARED_REPO>/actions/go-test@main
+  - uses: <OWNER>/<SHARED_REPO>/actions/go-test@<COMMIT_SHA>
     with:
       working-directory: .
       go-version: '1.23'
@@ -79,13 +78,5 @@ steps:
 
 - caller repo 側では `actions/checkout` を先に実行してください。
 - private repo 間で使う場合は、shared repo 側の **Actions access policy** を caller repo から参照できるように設定してください。
+- 呼び出し側では `@main` ではなく commit SHA pin を推奨します。
 - reusable workflow より composite action を優先しています。各 repo ごとに event / job 名 / required check 名を維持しやすいためです。
-
-## サンプル
-
-- `/Users/yota/Projects/Shared/examples/monee/testflight-deploy.yml`
-- `/Users/yota/Projects/Shared/examples/monee/testflight-distribute-existing-build.yml`
-- `/Users/yota/Projects/Shared/examples/talllk/backend-ci.yml`
-- `/Users/yota/Projects/Shared/examples/talllk/backend-deploy.yml`
-- `/Users/yota/Projects/Shared/examples/talllk/backend-sentry-triage.yml`
-- `/Users/yota/Projects/Shared/examples/talllk/mobile-ship-criteria.yml`
