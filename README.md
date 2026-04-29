@@ -25,6 +25,29 @@ Monee と Talllk で使っている GitHub Actions / helper scripts を 1 か所
 ### Go backend
 
 - `actions/go-test`
+
+### Render deploy reusable workflow
+
+- `.github/workflows/render-deploy.yml`
+  - caller repository を checkout します
+  - `actions/setup-go` で Go をセットアップします
+  - `test-command` を実行します
+  - `push` かつ `deploy-ref` に一致する場合だけ Render Deploy Hook を呼びます
+
+Caller example:
+
+```yaml
+jobs:
+  render:
+    uses: Suuu-sh/Shared/.github/workflows/render-deploy.yml@main
+    with:
+      go-version-file: go.mod
+      test-command: go test ./...
+      deploy-ref: refs/heads/main
+    secrets:
+      render_deploy_hook_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+```
+
 - `actions/go-lint`
 - `actions/go-build`
 - `actions/postgres-migrate`
