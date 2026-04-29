@@ -1,0 +1,77 @@
+name: Render deploy
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory that contains go.mod.
+        required: false
+        type: string
+        default: .
+      go-version-file:
+        description: Path to go.mod or go.work used by actions/setup-go.
+        required: false
+        type: string
+        default: go.mod
+      test-command:
+        description: Command used to run tests before deploy.
+        required: false
+        type: string
+        default: go test ./...
+      deploy-ref:
+        description: Git ref that is allowed to trigger Render deploy.
+        required: false
+        type: string
+        default: refs/heads/main
+    secrets:
+      render_deploy_hook_url:
+        description: Render Deploy Hook URL.
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: render-deploy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Go tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ inputs.go-version-file }}
+          cache: true
+
+      - name: Run tests
+        shell: bash
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          set -euo pipefail
+          ${{ inputs.test-command }}
+
+  deploy:
+    name: Trigger Render deploy
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == inputs.deploy-ref
+    steps:
+      - name: Trigger Render deploy hook
+        shell: bash
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.render_deploy_hook_url }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "render_deploy_hook_url secret is required." >&2
+            exit 1
+          fi
+
+          curl --fail --show-error --silent --request POST "$RENDER_DEPLOY_HOOK_URL"
