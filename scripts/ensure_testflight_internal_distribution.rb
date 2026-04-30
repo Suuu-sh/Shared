@@ -215,14 +215,25 @@ end
 def ensure_tester_in_group(email, tester_id, group_id)
   return if find_tester(email, group_id: group_id)
 
-  post_json("/v1/betaGroups/#{group_id}/relationships/betaTesters", {
-    data: [
-      {
-        type: 'betaTesters',
-        id: tester_id
-      }
-    ]
-  }, expected_statuses: [204])
+  begin
+    post_json("/v1/betaGroups/#{group_id}/relationships/betaTesters", {
+      data: [
+        {
+          type: 'betaTesters',
+          id: tester_id
+        }
+      ]
+    }, expected_statuses: [204])
+  rescue AppStoreConnectError => error
+    raise unless error.status == 409
+
+    # App Store Connect returns 409 when the tester is already related to the
+    # group. Treat that as an idempotent success so reruns do not fail after the
+    # build upload has already succeeded.
+    return if find_tester(email, group_id: group_id) || find_tester(email)
+
+    raise
+  end
 end
 
 def find_build(app_id, build_number, group_id: nil)
