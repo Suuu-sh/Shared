@@ -286,6 +286,64 @@ runs:
         echo "build-number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
         plutil -p "$EXPORT_OPTIONS_PLIST"
 
+    - name: Configure app target signing for archive
+      shell: bash
+      env:
+        APP_BUNDLE_ID: ${{ inputs.app-bundle-id }}
+        TEAM_ID: ${{ inputs.team-id }}
+      run: |
+        set -euo pipefail
+        /usr/bin/python3 - <<'PY'
+        import os
+        import re
+        from pathlib import Path
+
+        project_path = Path(os.environ["PROJECT_PATH"])
+        pbxproj = project_path / "project.pbxproj"
+        app_bundle_id = os.environ["APP_BUNDLE_ID"]
+        team_id = os.environ["TEAM_ID"]
+        profile_name = os.environ["PROVISIONING_PROFILE_NAME"]
+
+        text = pbxproj.read_text(encoding="utf-8")
+
+        def set_setting(block: str, key: str, value: str) -> str:
+            line = f"\t\t\t\t{key} = {value};"
+            pattern = re.compile(rf"^\t{{4}}{re.escape(key)} = .*;$", re.MULTILINE)
+            if pattern.search(block):
+                return pattern.sub(line, block)
+            return block + line + "\n"
+
+        pattern = re.compile(
+            r"(?P<header>\t\t[0-9A-F]+ /\* [^*]+ \*/ = \{\n"
+            r"\t\t\tisa = XCBuildConfiguration;\n"
+            r"\t\t\tbuildSettings = \{\n)"
+            r"(?P<body>.*?)"
+            r"(?P<footer>\t\t\t\};\n\t\t\tname = [^;]+;\n\t\t\};)",
+            re.DOTALL,
+        )
+
+        changed = [0]
+
+        def replace(match: re.Match) -> str:
+            body = match.group("body")
+            if f"PRODUCT_BUNDLE_IDENTIFIER = {app_bundle_id};" not in body:
+                return match.group(0)
+            original = body
+            body = set_setting(body, "CODE_SIGN_STYLE", "Manual")
+            body = set_setting(body, "CODE_SIGN_IDENTITY", '"Apple Distribution"')
+            body = set_setting(body, "DEVELOPMENT_TEAM", team_id)
+            body = set_setting(body, "PROVISIONING_PROFILE_SPECIFIER", f'"{profile_name}"')
+            if body != original:
+                changed[0] += 1
+            return match.group("header") + body + match.group("footer")
+
+        text = pattern.sub(replace, text)
+        if changed[0] == 0:
+            raise SystemExit(f"No build settings block found for bundle id {app_bundle_id}")
+        pbxproj.write_text(text, encoding="utf-8")
+        print(f"Configured manual App Store signing for {changed[0]} {app_bundle_id} build setting block(s).")
+        PY
+
     - name: Archive release build
       shell: bash
       env:
