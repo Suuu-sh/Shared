@@ -112,10 +112,13 @@ def find_app(bundle_id)
 end
 
 def find_group(app_id, group_name)
+  # App Store Connect's betaGroups endpoint does not reliably combine the
+  # name filter with app/internal filters for internal groups. List the
+  # app's internal groups and match the name locally so reruns reuse the
+  # existing group instead of creating duplicate CI Internal groups.
   get_json('/v1/betaGroups', {
     'filter[app]' => app_id,
     'filter[isInternalGroup]' => 'true',
-    'filter[name]' => group_name,
     'limit' => '200'
   }).fetch('data', []).find do |group|
     attrs = group.fetch('attributes', {})
