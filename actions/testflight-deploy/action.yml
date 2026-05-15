@@ -316,6 +316,7 @@ runs:
         pattern = re.compile(
             r"(?P<header>\t\t[0-9A-F]+ /\* [^*]+ \*/ = \{\n"
             r"\t\t\tisa = XCBuildConfiguration;\n"
+            r"(?:\t\t\t(?!buildSettings = \{)[^\n]*\n)*"
             r"\t\t\tbuildSettings = \{\n)"
             r"(?P<body>.*?)"
             r"(?P<footer>\t\t\t\};\n\t\t\tname = [^;]+;\n\t\t\};)",
