@@ -4,6 +4,10 @@ inputs:
   project-path:
     description: Path to the .xcodeproj file.
     required: true
+  workspace-path:
+    description: Optional path to the .xcworkspace file used for xcodebuild. When omitted, project-path is used.
+    required: false
+    default: ''
   scheme:
     description: Xcode scheme.
     required: true
@@ -115,6 +119,7 @@ runs:
       shell: bash
       env:
         PROJECT_PATH_INPUT: ${{ inputs.project-path }}
+        WORKSPACE_PATH_INPUT: ${{ inputs.workspace-path }}
         SCHEME: ${{ inputs.scheme }}
       run: |
         set -euo pipefail
@@ -127,6 +132,10 @@ runs:
         }
 
         PROJECT_PATH="$(resolve_path "$PROJECT_PATH_INPUT")"
+        WORKSPACE_PATH=""
+        if [ -n "${WORKSPACE_PATH_INPUT:-}" ]; then
+          WORKSPACE_PATH="$(resolve_path "$WORKSPACE_PATH_INPUT")"
+        fi
         ARCHIVE_PATH="$RUNNER_TEMP/${SCHEME}.xcarchive"
         EXPORT_PATH="$RUNNER_TEMP/${SCHEME}Export"
         EXPORT_OPTIONS_PLIST="$RUNNER_TEMP/${SCHEME}ExportOptions.plist"
@@ -134,6 +143,7 @@ runs:
 
         {
           echo "PROJECT_PATH=$PROJECT_PATH"
+          echo "WORKSPACE_PATH=$WORKSPACE_PATH"
           echo "ARCHIVE_PATH=$ARCHIVE_PATH"
           echo "EXPORT_PATH=$EXPORT_PATH"
           echo "EXPORT_OPTIONS_PLIST=$EXPORT_OPTIONS_PLIST"
@@ -145,7 +155,11 @@ runs:
       run: |
         set -euo pipefail
         xcodebuild -version
-        xcodebuild -list -project "$PROJECT_PATH"
+        if [ -n "${WORKSPACE_PATH:-}" ]; then
+          xcodebuild -list -workspace "$WORKSPACE_PATH"
+        else
+          xcodebuild -list -project "$PROJECT_PATH"
+        fi
 
     - name: Create App Store Connect API key file
       shell: bash
@@ -355,8 +369,13 @@ runs:
       run: |
         set -euo pipefail
         rm -rf "$ARCHIVE_PATH" "$EXPORT_PATH"
+        container_args=(-project "$PROJECT_PATH")
+        if [ -n "${WORKSPACE_PATH:-}" ]; then
+          container_args=(-workspace "$WORKSPACE_PATH")
+        fi
+
         xcodebuild \
-          -project "$PROJECT_PATH" \
+          "${container_args[@]}" \
           -scheme "$SCHEME" \
           -configuration "$CONFIGURATION" \
           -archivePath "$ARCHIVE_PATH" \
