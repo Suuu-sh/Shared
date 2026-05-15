@@ -22,6 +22,28 @@ Monee と Talllk で使っている GitHub Actions / helper scripts を 1 か所
 - `actions/testflight-distribute-existing-build`
   - 既存 TestFlight build を内部テスターへ再配布
 
+
+### Supabase / PostgreSQL migrations
+
+- `.github/workflows/supabase-postgres-migrate.yml`
+  - caller repository の migration SQL を検証します
+  - `push` かつ `deploy-ref` に一致する場合だけ production DB に適用します
+  - 実行済み migration は `public.app_schema_migrations` で管理します
+  - connection string は caller repository/environment の secret として渡します
+
+Caller example:
+
+```yaml
+jobs:
+  migrate-production-db:
+    uses: Suuu-sh/Shared/.github/workflows/supabase-postgres-migrate.yml@main
+    with:
+      migrations-dir: supabase/migrations
+      deploy-ref: refs/heads/main
+    secrets:
+      database_url: ${{ secrets.SUPABASE_PRODUCTION_DATABASE_URL }}
+```
+
 ### Go backend
 
 - `actions/go-test`
