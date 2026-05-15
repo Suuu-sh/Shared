@@ -29,7 +29,7 @@ Monee と Talllk で使っている GitHub Actions / helper scripts を 1 か所
   - caller repository の migration SQL を検証します
   - `push` かつ `deploy-ref` に一致する場合だけ production DB に適用します
   - 実行済み migration は `public.app_schema_migrations` で管理します
-  - connection string は caller repository/environment の secret として渡します
+  - connection string は caller repository の Actions secret として渡します
 
 Caller example:
 
