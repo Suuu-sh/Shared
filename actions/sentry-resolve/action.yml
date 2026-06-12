@@ -1,0 +1,47 @@
+name: Sentry Resolve
+description: Resolve Sentry issues referenced by changed note files.
+inputs:
+  sentry-auth-token:
+    description: Sentry auth token.
+    required: true
+  base-url:
+    description: Sentry base URL.
+    required: false
+    default: https://sentry.io
+  org:
+    description: Sentry org slug.
+    required: false
+    default: suu-hb
+  note-dir:
+    description: Directory containing sentry note files.
+    required: false
+    default: .codex/sentry-fix
+  commit-range:
+    description: Commit range used to inspect changed note files.
+    required: false
+    default: ''
+  python-version:
+    description: Python version.
+    required: false
+    default: '3.11'
+runs:
+  using: composite
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Resolve Sentry issues
+      shell: bash
+      env:
+        ACTION_ROOT: ${{ github.action_path }}
+        SENTRY_AUTH_TOKEN: ${{ inputs.sentry-auth-token }}
+        SENTRY_BASE_URL: ${{ inputs.base-url }}
+        SENTRY_ORG: ${{ inputs.org }}
+        SENTRY_NOTE_DIR: ${{ inputs.note-dir }}
+        SENTRY_RESOLVE_COMMIT_RANGE: ${{ inputs.commit-range }}
+        SENTRY_REPO_ROOT: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        python "$ACTION_ROOT/../../scripts/sentry_resolve.py"

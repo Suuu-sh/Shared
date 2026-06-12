@@ -1,0 +1,44 @@
+name: PostgreSQL Migrate
+description: Install PostgreSQL client when needed and apply SQL migrations idempotently.
+inputs:
+  database-url:
+    description: PostgreSQL connection string.
+    required: true
+  migrations-dir:
+    description: Directory that contains migration SQL files.
+    required: false
+    default: sql/migrations
+  install-postgresql-client:
+    description: Whether to install postgresql-client on the runner.
+    required: false
+    default: 'true'
+runs:
+  using: composite
+  steps:
+    - name: Install PostgreSQL client
+      if: ${{ inputs.install-postgresql-client == 'true' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
+
+    - name: Apply SQL migrations
+      shell: bash
+      env:
+        ACTION_ROOT: ${{ github.action_path }}
+        DATABASE_URL: ${{ inputs.database-url }}
+        MIGRATIONS_DIR_INPUT: ${{ inputs.migrations-dir }}
+        REPO_ROOT: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+
+        resolve_path() {
+          case "$1" in
+            /*) printf '%s\n' "$1" ;;
+            *) printf '%s\n' "$REPO_ROOT/$1" ;;
+          esac
+        }
+
+        export MIGRATIONS_DIR="$(resolve_path "$MIGRATIONS_DIR_INPUT")"
+        bash "$ACTION_ROOT/../../scripts/apply_migrations.sh"

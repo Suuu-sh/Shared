@@ -1,0 +1,34 @@
+name: Go Lint
+description: Set up Go and run golangci-lint.
+inputs:
+  working-directory:
+    description: Directory that contains go.mod.
+    required: false
+    default: .
+  go-version:
+    description: Go version to install.
+    required: false
+    default: '1.23'
+  golangci-lint-version:
+    description: golangci-lint version.
+    required: false
+    default: latest
+  golangci-lint-args:
+    description: Arguments passed to golangci-lint.
+    required: false
+    default: --timeout=5m
+runs:
+  using: composite
+  steps:
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.go-version }}
+        cache: true
+
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v4
+      with:
+        version: ${{ inputs.golangci-lint-version }}
+        args: ${{ inputs.golangci-lint-args }}
+        working-directory: ${{ inputs.working-directory }}

@@ -1,0 +1,96 @@
+name: Supabase PostgreSQL migrate
+
+on:
+  workflow_call:
+    inputs:
+      migrations-dir:
+        description: Directory containing ordered .sql migration files, relative to the caller repository root.
+        required: false
+        type: string
+        default: supabase/migrations
+      deploy-ref:
+        description: Git ref allowed to apply production migrations.
+        required: false
+        type: string
+        default: refs/heads/main
+      install-postgresql-client:
+        description: Install postgresql-client on the runner before applying migrations.
+        required: false
+        type: boolean
+        default: true
+      run-on-pull-request:
+        description: Run read-only migration file validation on pull_request events.
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      database_url:
+        description: PostgreSQL connection string for the target Supabase project. Use a production DB URL secret from the caller repository/environment.
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-postgres-migrate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate migration files
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || inputs.run-on-pull-request
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+
+      - name: Validate migrations directory
+        shell: bash
+        env:
+          MIGRATIONS_DIR: ${{ inputs.migrations-dir }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -d "$MIGRATIONS_DIR" ]; then
+            echo "::error::Migrations directory not found: $MIGRATIONS_DIR"
+            exit 1
+          fi
+
+          mapfile -t migration_files < <(find "$MIGRATIONS_DIR" -maxdepth 1 -type f -name '*.sql' | sort)
+          if [ "${#migration_files[@]}" -eq 0 ]; then
+            echo "No migration files found in $MIGRATIONS_DIR."
+            exit 0
+          fi
+
+          previous=''
+          for file in "${migration_files[@]}"; do
+            base="$(basename "$file")"
+            if ! [[ "$base" =~ ^[0-9]{14}_[a-z0-9_]+\.sql$ ]]; then
+              echo "::error file=$file::Migration filename must match YYYYMMDDHHMMSS_snake_case.sql"
+              exit 1
+            fi
+            version="${base%%_*}"
+            if [ -n "$previous" ] && [ "$version" = "$previous" ]; then
+              echo "::error file=$file::Duplicate migration timestamp: $version"
+              exit 1
+            fi
+            previous="$version"
+          done
+
+          echo "Validated ${#migration_files[@]} migration file(s)."
+
+  migrate:
+    name: Apply production migrations
+    needs: validate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == inputs.deploy-ref
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+
+      - name: Apply migrations via Shared action
+        uses: Suuu-sh/Shared/actions/postgres-migrate@main
+        with:
+          database-url: ${{ secrets.database_url }}
+          migrations-dir: ${{ inputs.migrations-dir }}
+          install-postgresql-client: ${{ inputs.install-postgresql-client && 'true' || 'false' }}

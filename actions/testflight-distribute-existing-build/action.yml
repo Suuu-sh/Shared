@@ -1,0 +1,95 @@
+name: TestFlight Distribute Existing Build
+description: Assign an existing TestFlight build to internal testers and optionally notify them.
+inputs:
+  app-bundle-id:
+    description: App bundle identifier.
+    required: true
+  app-store-connect-key-id:
+    description: App Store Connect API key ID.
+    required: true
+  app-store-connect-issuer-id:
+    description: App Store Connect issuer ID.
+    required: true
+  app-store-connect-private-key:
+    description: App Store Connect private key contents.
+    required: true
+  build-number:
+    description: Optional build number. If omitted, the latest uploaded build is used.
+    required: false
+    default: ''
+  testflight-internal-group-name:
+    description: Internal TestFlight group name.
+    required: false
+    default: CI Internal
+  testflight-internal-tester-emails:
+    description: Comma separated internal tester emails.
+    required: true
+  testflight-notify-assigned-testers:
+    description: Whether to send TestFlight notifications.
+    required: false
+    default: 'true'
+runs:
+  using: composite
+  steps:
+    - name: Validate required inputs
+      shell: bash
+      env:
+        APP_BUNDLE_ID: ${{ inputs.app-bundle-id }}
+        APP_STORE_CONNECT_KEY_ID: ${{ inputs.app-store-connect-key-id }}
+        APP_STORE_CONNECT_ISSUER_ID: ${{ inputs.app-store-connect-issuer-id }}
+        APP_STORE_CONNECT_PRIVATE_KEY: ${{ inputs.app-store-connect-private-key }}
+        TESTFLIGHT_INTERNAL_TESTER_EMAILS: ${{ inputs.testflight-internal-tester-emails }}
+      run: |
+        set -euo pipefail
+
+        required_inputs=(
+          APP_BUNDLE_ID
+          APP_STORE_CONNECT_KEY_ID
+          APP_STORE_CONNECT_ISSUER_ID
+          APP_STORE_CONNECT_PRIVATE_KEY
+          TESTFLIGHT_INTERNAL_TESTER_EMAILS
+        )
+
+        for name in "${required_inputs[@]}"; do
+          if [ -z "${!name}" ]; then
+            echo "$name input is required."
+            exit 1
+          fi
+        done
+
+    - name: Create App Store Connect API key file
+      shell: bash
+      env:
+        APP_STORE_CONNECT_KEY_ID: ${{ inputs.app-store-connect-key-id }}
+        APP_STORE_CONNECT_PRIVATE_KEY: ${{ inputs.app-store-connect-private-key }}
+      run: |
+        set -euo pipefail
+        KEY_PATH="$RUNNER_TEMP/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
+        printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY" > "$KEY_PATH"
+        chmod 600 "$KEY_PATH"
+        echo "APP_STORE_CONNECT_KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
+
+    - name: Assign build and notify testers
+      shell: bash
+      env:
+        ACTION_ROOT: ${{ github.action_path }}
+        ASC_KEY_ID: ${{ inputs.app-store-connect-key-id }}
+        ASC_ISSUER_ID: ${{ inputs.app-store-connect-issuer-id }}
+        TESTFLIGHT_INTERNAL_GROUP_NAME: ${{ inputs.testflight-internal-group-name }}
+        TESTFLIGHT_INTERNAL_TESTER_EMAILS: ${{ inputs.testflight-internal-tester-emails }}
+        TESTFLIGHT_NOTIFY_ASSIGNED_TESTERS: ${{ inputs.testflight-notify-assigned-testers }}
+        APP_BUNDLE_ID: ${{ inputs.app-bundle-id }}
+        BUILD_NUMBER_INPUT: ${{ inputs.build-number }}
+      run: |
+        set -euo pipefail
+
+        export ASC_PRIVATE_KEY_PATH="$APP_STORE_CONNECT_KEY_PATH"
+
+        extra_args=()
+        if [ -n "$BUILD_NUMBER_INPUT" ]; then
+          extra_args+=(--build-number "$BUILD_NUMBER_INPUT")
+        fi
+
+        ruby "$ACTION_ROOT/../../scripts/ensure_testflight_internal_distribution.rb" \
+          --bundle-id "$APP_BUNDLE_ID" \
+          "${extra_args[@]}"
