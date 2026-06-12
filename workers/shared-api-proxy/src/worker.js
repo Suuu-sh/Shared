@@ -57,6 +57,14 @@ export default {
     }
 
     const proxyRequest = buildProxyRequest(request, route, incomingUrl);
-    return fetch(proxyRequest);
+    const response = await fetch(proxyRequest);
+    const headers = stripHopByHopHeaders(response.headers);
+    headers.set("X-Shared-Api-Proxy", route.name);
+
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
   },
 };

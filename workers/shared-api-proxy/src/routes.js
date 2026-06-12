@@ -7,4 +7,8 @@ export const ROUTES = {
     name: "ohey-production-api",
     origin: "https://ohey-backend.onrender.com",
   },
+  "api.talllk.net": {
+    name: "talllk-production-api",
+    origin: "https://talllk-backend.onrender.com",
+  },
 };

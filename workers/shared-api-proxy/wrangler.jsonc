@@ -12,6 +12,10 @@
     {
       "pattern": "api.oheyapp.com/*",
       "zone_name": "oheyapp.com"
+    },
+    {
+      "pattern": "api.talllk.net/*",
+      "zone_name": "talllk.net"
     }
   ],
   "observability": {

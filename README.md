@@ -19,6 +19,7 @@ Cloudflare Worker 1台で複数プロダクトの API reverse proxy を管理し
 | --- | --- | --- |
 | `api.failbase.app` | `https://failbase-backend.onrender.com` | FailBase production API |
 | `api.oheyapp.com` | `https://ohey-backend.onrender.com` | Ohey production API |
+| `api.talllk.net` | `https://talllk-backend.onrender.com` | Talllk production API |
 
 ```bash
 cd workers/shared-api-proxy
