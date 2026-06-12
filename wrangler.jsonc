@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "shared-api-proxy",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-06-12",
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "api.failbase.app",
+      "custom_domain": true
+    },
+    {
+      "pattern": "api.oheyapp.com/*",
+      "zone_name": "oheyapp.com"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}
