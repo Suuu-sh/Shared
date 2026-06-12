@@ -6,8 +6,8 @@
   "workers_dev": false,
   "routes": [
     {
-      "pattern": "api.failbase.app",
-      "custom_domain": true
+      "pattern": "api.failbase.app/*",
+      "zone_name": "failbase.app"
     },
     {
       "pattern": "api.oheyapp.com/*",
