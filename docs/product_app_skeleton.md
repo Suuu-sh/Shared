@@ -20,15 +20,15 @@ Backend / Frontend / Mobile は、可能ならそれぞれ独立 Git repository 
 
 ### Runtime / libraries
 
-- Language: Go 1.23+
+- Language: Go 1.25.0
 - HTTP: standard library `net/http` + `http.ServeMux`
 - DB: Neon PostgreSQL
 - DB driver: `github.com/jackc/pgx/v5`
 - ORM: 使用しない
 - Web framework: Gin/Echo/Fiber などは使用しない
-- Auth: Clerk JWT / JWKS verification
+- Auth: Clerk JWT / JWKS verification for auth-enabled products; FailBase stays unauthenticated
 - Mail: Resend
-- Storage: Cloudflare R2 when object storage is needed
+- Storage: Cloudflare R2 as the standard object storage
 - Error monitoring: Sentry when needed
 
 ### Backend tree
@@ -189,7 +189,7 @@ Ohey など既存 app 固有 prefix がある場合も、新規 app は上記の
 Recommended migration layout:
 
 ```text
-Backend/sql/migrations/
+Backend/db/migrations/
   202606130001_create_users.sql
   202606130002_create_<feature>.sql
 ```
@@ -325,6 +325,6 @@ flutter test
 
 - Ohey Backend: standard source of truth
 - Talllk Backend: aligned to `cmd/api`, `internal/httpapi`, `internal/postgres`, `internal/features`, Clerk + Neon + Resend/R2
-- FailBase Backend: aligned to `cmd/api`, `internal/httpapi`, `internal/postgres`, `internal/features`, Neon + Resend; Clerk config keys are standardized for auth-enabled flows
+- FailBase Backend: aligned to `cmd/api`, `internal/httpapi`, `internal/postgres`, `internal/features`, Neon + Resend; no auth by default; do not add Clerk until the product needs login
 - Talllk / Ohey Mobile: Flutter + Clerk + API service layer
 - Talllk / FailBase Frontend: Next.js; new work should standardize env names and Clerk integration where auth is required
