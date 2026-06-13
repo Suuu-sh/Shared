@@ -138,6 +138,16 @@ Rules:
 - `domain.go` owns DTO/domain structs
 - `repository.go` owns interfaces
 
+### Health check standard
+
+Use one backend health endpoint only:
+
+```text
+GET /health
+```
+
+`/health` is the Render / external monitor / deploy monitor endpoint. It must ping the database with a short timeout and return `503` when the database is not reachable. Do not add `/health/live`, `/health/ready`, or `/healthz` unless a specific platform requires a compatibility alias.
+
 ## 3. Auth standard
 
 ### Provider
