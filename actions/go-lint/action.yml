@@ -8,11 +8,11 @@ inputs:
   go-version:
     description: Go version to install.
     required: false
-    default: '1.23'
+    default: '1.25'
   golangci-lint-version:
     description: golangci-lint version.
     required: false
-    default: latest
+    default: v2.12.1
   golangci-lint-args:
     description: Arguments passed to golangci-lint.
     required: false
