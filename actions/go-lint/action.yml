@@ -27,7 +27,7 @@ runs:
         cache: true
 
     - name: Run golangci-lint
-      uses: golangci/golangci-lint-action@v6
+      uses: golangci/golangci-lint-action@v7
       with:
         version: ${{ inputs.golangci-lint-version }}
         args: ${{ inputs.golangci-lint-args }}
