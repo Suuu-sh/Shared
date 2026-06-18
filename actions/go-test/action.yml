@@ -54,7 +54,7 @@ runs:
 
     - name: Upload coverage
       if: ${{ inputs.upload-coverage == 'true' }}
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v7
       with:
         files: ${{ inputs.working-directory }}/${{ inputs.coverage-file }}
         fail_ci_if_error: false
