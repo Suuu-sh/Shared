@@ -26,9 +26,48 @@ runs:
         go-version: ${{ inputs.go-version }}
         cache: true
 
+    - name: Install golangci-lint
+      shell: bash
+      env:
+        GOLANGCI_LINT_VERSION: ${{ inputs.golangci-lint-version }}
+      run: |
+        set -euo pipefail
+
+        version="$GOLANGCI_LINT_VERSION"
+        if [[ "$version" == "latest" ]]; then
+          version="v1.64.8"
+        fi
+        if [[ "$version" != v* ]]; then
+          version="v${version}"
+        fi
+
+        version_without_v="${version#v}"
+        case "${RUNNER_OS}-${RUNNER_ARCH}" in
+          Linux-X64) platform="linux-amd64" ;;
+          Linux-ARM64) platform="linux-arm64" ;;
+          macOS-X64) platform="darwin-amd64" ;;
+          macOS-ARM64) platform="darwin-arm64" ;;
+          *)
+            echo "Unsupported runner platform: ${RUNNER_OS}-${RUNNER_ARCH}" >&2
+            exit 1
+            ;;
+        esac
+
+        install_dir="${RUNNER_TEMP}/golangci-lint-${version_without_v}"
+        mkdir -p "$install_dir"
+
+        archive="golangci-lint-${version_without_v}-${platform}.tar.gz"
+        url="https://github.com/golangci/golangci-lint/releases/download/${version}/${archive}"
+        curl --fail --location --silent --show-error "$url" --output "${RUNNER_TEMP}/${archive}"
+        tar -xzf "${RUNNER_TEMP}/${archive}" -C "$install_dir" --strip-components=1
+        echo "$install_dir" >> "$GITHUB_PATH"
+        "$install_dir/golangci-lint" version
+
     - name: Run golangci-lint
-      uses: golangci/golangci-lint-action@v9
-      with:
-        version: ${{ inputs.golangci-lint-version }}
-        args: ${{ inputs.golangci-lint-args }}
-        working-directory: ${{ inputs.working-directory }}
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        GOLANGCI_LINT_ARGS: ${{ inputs.golangci-lint-args }}
+      run: |
+        set -euo pipefail
+        golangci-lint run ${GOLANGCI_LINT_ARGS}
