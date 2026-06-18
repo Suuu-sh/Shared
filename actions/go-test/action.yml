@@ -33,7 +33,7 @@ runs:
   using: composite
   steps:
     - name: Setup Go
-      uses: actions/setup-go@v6
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
       with:
         go-version: ${{ inputs.go-version }}
         cache: true
@@ -54,7 +54,7 @@ runs:
 
     - name: Upload coverage
       if: ${{ inputs.upload-coverage == 'true' }}
-      uses: codecov/codecov-action@v7
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f
       with:
         files: ${{ inputs.working-directory }}/${{ inputs.coverage-file }}
         fail_ci_if_error: false

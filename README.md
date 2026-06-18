@@ -25,8 +25,13 @@ Cloudflare Worker 1台で複数プロダクトの API reverse proxy を管理し
 cd workers/shared-api-proxy
 npm install
 npm run check
+wrangler secret put ORIGIN_VERIFY_SECRET
 npm run deploy
 ```
+
+`ORIGIN_VERIFY_SECRET` は Worker から各 origin backend へ `X-Origin-Verify`
+として渡す共有シークレットです。各 backend 側にも同じ値を設定し、
+Render/Fly の直 URL からの production API 直叩きを防ぎます。
 
 ## 収録している共通 action
 

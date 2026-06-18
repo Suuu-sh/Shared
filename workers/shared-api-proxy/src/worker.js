@@ -19,15 +19,34 @@ function stripHopByHopHeaders(headers) {
   return next;
 }
 
-function buildProxyRequest(request, route, incomingUrl) {
+function clientIPFromCloudflare(request) {
+  const cfConnectingIP = request.headers.get("CF-Connecting-IP");
+  if (cfConnectingIP) {
+    return cfConnectingIP.trim();
+  }
+  return "";
+}
+
+function buildProxyRequest(request, route, incomingUrl, env) {
   const origin = new URL(route.origin);
   const targetUrl = new URL(incomingUrl.pathname + incomingUrl.search, origin);
   const headers = stripHopByHopHeaders(request.headers);
+  const clientIP = clientIPFromCloudflare(request);
 
+  headers.delete("X-Origin-Verify");
+  headers.delete("X-Forwarded-For");
+  headers.delete("X-Real-IP");
   headers.set("Host", origin.host);
   headers.set("X-Forwarded-Host", incomingUrl.host);
   headers.set("X-Forwarded-Proto", incomingUrl.protocol.replace(":", ""));
   headers.set("X-Proxy-Route", route.name);
+  if (clientIP) {
+    headers.set("X-Forwarded-For", clientIP);
+    headers.set("X-Real-IP", clientIP);
+  }
+  if (env?.ORIGIN_VERIFY_SECRET) {
+    headers.set("X-Origin-Verify", env.ORIGIN_VERIFY_SECRET);
+  }
 
   return new Request(targetUrl.toString(), {
     method: request.method,
@@ -48,7 +67,7 @@ function notFound(hostname) {
 }
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const incomingUrl = new URL(request.url);
     const route = ROUTES[incomingUrl.hostname.toLowerCase()];
 
@@ -56,7 +75,7 @@ export default {
       return notFound(incomingUrl.hostname);
     }
 
-    const proxyRequest = buildProxyRequest(request, route, incomingUrl);
+    const proxyRequest = buildProxyRequest(request, route, incomingUrl, env);
     const response = await fetch(proxyRequest);
     const headers = stripHopByHopHeaders(response.headers);
     headers.set("X-Shared-Api-Proxy", route.name);
