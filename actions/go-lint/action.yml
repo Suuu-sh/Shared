@@ -10,9 +10,9 @@ inputs:
     required: false
     default: '1.23'
   golangci-lint-version:
-    description: golangci-lint version.
+    description: golangci-lint version. Defaults to the latest v1 release to preserve v1 config compatibility.
     required: false
-    default: latest
+    default: v1.64.8
   golangci-lint-args:
     description: Arguments passed to golangci-lint.
     required: false
