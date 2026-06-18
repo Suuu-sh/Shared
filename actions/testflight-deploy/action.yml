@@ -420,7 +420,7 @@ runs:
 
     - name: Upload export artifacts on failure
       if: ${{ failure() && inputs.upload-failure-artifacts == 'true' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ inputs.failure-artifact-name }}
         path: |
