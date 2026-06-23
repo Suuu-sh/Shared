@@ -19,7 +19,7 @@ function stripHopByHopHeaders(headers) {
   return next;
 }
 
-function buildProxyRequest(request, route, incomingUrl) {
+function buildProxyRequest(request, route, incomingUrl, env = {}) {
   const origin = new URL(route.origin);
   const targetUrl = new URL(incomingUrl.pathname + incomingUrl.search, origin);
   const headers = stripHopByHopHeaders(request.headers);
@@ -28,6 +28,13 @@ function buildProxyRequest(request, route, incomingUrl) {
   headers.set("X-Forwarded-Host", incomingUrl.host);
   headers.set("X-Forwarded-Proto", incomingUrl.protocol.replace(":", ""));
   headers.set("X-Proxy-Route", route.name);
+
+  const originVerifySecret = route.originVerifySecretEnv
+    ? env[route.originVerifySecretEnv]
+    : undefined;
+  if (originVerifySecret) {
+    headers.set("X-Origin-Verify", originVerifySecret);
+  }
 
   return new Request(targetUrl.toString(), {
     method: request.method,
@@ -48,7 +55,7 @@ function notFound(hostname) {
 }
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const incomingUrl = new URL(request.url);
     const route = ROUTES[incomingUrl.hostname.toLowerCase()];
 
@@ -56,7 +63,7 @@ export default {
       return notFound(incomingUrl.hostname);
     }
 
-    const proxyRequest = buildProxyRequest(request, route, incomingUrl);
+    const proxyRequest = buildProxyRequest(request, route, incomingUrl, env);
     const response = await fetch(proxyRequest);
     const headers = stripHopByHopHeaders(response.headers);
     headers.set("X-Shared-Api-Proxy", route.name);
