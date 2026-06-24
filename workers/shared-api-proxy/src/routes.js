@@ -11,5 +11,6 @@ export const ROUTES = {
   "api.talllk.net": {
     name: "talllk-production-api",
     origin: "https://talllk-backend.onrender.com",
+    originVerifySecretEnv: "TALLLK_ORIGIN_VERIFY_SECRET",
   },
 };

@@ -42,7 +42,7 @@ jobs:
     if: github.event_name != 'pull_request' || inputs.run-on-pull-request
     steps:
       - name: Checkout caller repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
       - name: Validate migrations directory
         shell: bash
@@ -86,10 +86,10 @@ jobs:
     if: github.event_name == 'push' && github.ref == inputs.deploy-ref
     steps:
       - name: Checkout caller repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
       - name: Apply migrations via Shared action
-        uses: Suuu-sh/Shared/actions/postgres-migrate@main
+        uses: Suuu-sh/Shared/actions/postgres-migrate@14493629d7643804883fc052be7dc3f6f810ba36
         with:
           database-url: ${{ secrets.database_url }}
           migrations-dir: ${{ inputs.migrations-dir }}

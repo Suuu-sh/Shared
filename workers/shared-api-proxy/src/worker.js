@@ -19,15 +19,31 @@ function stripHopByHopHeaders(headers) {
   return next;
 }
 
+function clientIPFromCloudflare(request) {
+  const cfConnectingIP = request.headers.get("CF-Connecting-IP");
+  if (cfConnectingIP) {
+    return cfConnectingIP.trim();
+  }
+  return "";
+}
+
 function buildProxyRequest(request, route, incomingUrl, env = {}) {
   const origin = new URL(route.origin);
   const targetUrl = new URL(incomingUrl.pathname + incomingUrl.search, origin);
   const headers = stripHopByHopHeaders(request.headers);
+  const clientIP = clientIPFromCloudflare(request);
 
+  headers.delete("X-Origin-Verify");
+  headers.delete("X-Forwarded-For");
+  headers.delete("X-Real-IP");
   headers.set("Host", origin.host);
   headers.set("X-Forwarded-Host", incomingUrl.host);
   headers.set("X-Forwarded-Proto", incomingUrl.protocol.replace(":", ""));
   headers.set("X-Proxy-Route", route.name);
+  if (clientIP) {
+    headers.set("X-Forwarded-For", clientIP);
+    headers.set("X-Real-IP", clientIP);
+  }
 
   const originVerifySecret = route.originVerifySecretEnv
     ? env[route.originVerifySecretEnv]
