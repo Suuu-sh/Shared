@@ -6,9 +6,11 @@ export const ROUTES = {
   "api.oheyapp.com": {
     name: "ohey-production-api",
     origin: "https://ohey-backend.onrender.com",
+    originVerifySecretEnv: "OHEY_ORIGIN_VERIFY_SECRET",
   },
   "api.talllk.net": {
     name: "talllk-production-api",
     origin: "https://talllk-backend.onrender.com",
+    originVerifySecretEnv: "TALLLK_ORIGIN_VERIFY_SECRET",
   },
 };

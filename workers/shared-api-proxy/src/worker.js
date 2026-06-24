@@ -27,7 +27,7 @@ function clientIPFromCloudflare(request) {
   return "";
 }
 
-function buildProxyRequest(request, route, incomingUrl, env) {
+function buildProxyRequest(request, route, incomingUrl, env = {}) {
   const origin = new URL(route.origin);
   const targetUrl = new URL(incomingUrl.pathname + incomingUrl.search, origin);
   const headers = stripHopByHopHeaders(request.headers);
@@ -44,8 +44,12 @@ function buildProxyRequest(request, route, incomingUrl, env) {
     headers.set("X-Forwarded-For", clientIP);
     headers.set("X-Real-IP", clientIP);
   }
-  if (env?.ORIGIN_VERIFY_SECRET) {
-    headers.set("X-Origin-Verify", env.ORIGIN_VERIFY_SECRET);
+
+  const originVerifySecret = route.originVerifySecretEnv
+    ? env[route.originVerifySecretEnv]
+    : undefined;
+  if (originVerifySecret) {
+    headers.set("X-Origin-Verify", originVerifySecret);
   }
 
   return new Request(targetUrl.toString(), {
